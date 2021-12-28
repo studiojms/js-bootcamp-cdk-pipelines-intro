@@ -24,11 +24,23 @@ export class CdkpipelinesDemoPipelineStack extends Stack {
     });
 
     // This is where we add the application stages
-    pipeline.addStage(
-      new CdkpipelinesDemoStage(this, 'PreProd', {
-        env: { account: '341538094609', region: 'us-east-1' },
-      })
-    );
+    const preProd = new CdkpipelinesDemoStage(this, 'PreProd', {
+      env: { account: '341538094609', region: 'us-east-1' },
+    });
+
+    pipeline.addStage(preProd, {
+      post: [
+        new ShellStep('TestService', {
+          commands: [
+            //use curl to GET the given URL and fail if it returns an error
+            'curl -Ssf $ENDPOINT_URL',
+          ],
+          envFromCfnOutputs: {
+            ENDPOINT_URL: preProd.urlOutput,
+          },
+        }),
+      ],
+    });
 
     const prod = new CdkpipelinesDemoStage(this, 'Prod', {
       env: { account: '341538094609', region: 'us-east-1' },
